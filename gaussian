@@ -1,0 +1,97 @@
+% initialization
+clear all % clears all variables
+clc % clears workspace
+close all % clears and closes all figure windows
+
+%%
+folder = 'toyProblem_F22';
+video = zeros(256,256,64);
+
+for i = 1:9
+    video(:,:,i) = im2double(rgb2gray(imread(strcat(folder,sprintf('/frame_0%d.png',i)))));
+end
+for i = 10:64
+    video(:,:,i) = im2double(rgb2gray(imread(strcat(folder,sprintf('/frame_%d.png',i)))));
+end
+
+%sliceViewer(video)
+
+%% Gradient
+
+Vx = video(2:end,:,:) - video(1:end-1,:,:);
+sliceViewer(Vx)
+
+Vy = video(:,2:end,:) - video(:,1:end-1,:);
+%imshow(Vx(:,:,1))
+
+Vt = video(:,:,2:end) - video(:,:,1:end-1);
+sliceViewer(Vt)
+
+%% Prewitt
+prewitt1 = [1,0,-1;
+           1,0,-1;
+           1,0,-1];
+
+prewitt2 = [1,1,1;
+           0,0,0;
+           -1,-1,-1];
+
+figure(1)
+
+subplot(1,2,1)
+imshow(imfilter(video(:,:,1),prewitt1));
+
+subplot(1,2,2)
+imshow(imfilter(video(:,:,1),prewitt2));
+
+%% Sobel
+
+sobel1 = [1,0,-1;
+           2,0,-2;
+           1,0,-1];
+
+sobel2 = [1,2,1;
+           0,0,0;
+           -1,-2,-1];
+
+figure(1)
+sliceViewer(imfilter(video,sobel1));
+
+figure(2)
+sliceViewer(imfilter(video,sobel2));
+
+%% Gaussian 1D
+n = 5;
+sigma = 3;
+gauss = (1:n) - (n+1)/2;
+
+G = @(x) 1/(sqrt(2*pi*(sigma.^2))) * exp(- x.^2 /(2 * sigma.^2));
+
+gauss = G(gauss);
+%% column
+video_gauss1 = imfilter(video,gauss');
+sliceViewer(video_gauss1)
+%% row
+video_gauss2 = imfilter(video,gauss);
+sliceViewer(video_gauss2)
+
+%% Gaussian 1D
+n = 7;
+sigma = 3;
+gauss = (1:n) - (n+1)/2;
+
+G = @(x) 1/(sqrt(2*pi*(sigma.^2))) * exp(- x.^2 /(2 * sigma.^2));
+
+gauss = G(gauss);
+%% 3D gauss derivative of x
+
+gausst = zeros(1,1,n);
+gausst(1,1,:) = gauss;
+
+gauss3D = imfilter(video,gausst);
+gauss3D = imfilter(gauss3D,gauss');
+
+gauss_derivative = -((1:n) - (n+1)/2)/(sigma.^2);
+gauss_derivative = gauss_derivative.*gauss;
+gauss3D = imfilter(gauss3D,gauss_derivative);
+sliceViewer(im2double(gauss3D))
